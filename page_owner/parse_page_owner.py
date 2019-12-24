@@ -107,7 +107,7 @@ example_text = '''example:
 
 def add_common_parser_options(parser):
     parser.add_argument('--space', dest='calc_page_space', help='calc page space when sorting', default=False, action='store_true')
-    parser.add_argument('--merge-stack', dest='merge_stack', help='merge same stack allocation to one', default=False, action='store_true')
+    parser.add_argument('--merge-stack', dest='merge_stack', help='merge same stack allocation to one regardless of page order', default=False, action='store_true')
 
 
 def parse_args_or_exit(argv=None):
@@ -126,7 +126,7 @@ def parse_args_or_exit(argv=None):
     search_parser.add_argument('file', help='page_owner_file')
     search_parser.set_defaults(cmd=parse_page_owner)
 
-    get_parser = subparsers.add_parser('diff', help='get objects by filter')
+    get_parser = subparsers.add_parser('diff', help='diff 2 page_owner files')
     get_parser.add_argument('file_old', help='old_page_owner_file')
     get_parser.add_argument('file_new', help='new_page_owner_file')
     get_parser.set_defaults(cmd=diff_page_owner)

@@ -12,34 +12,39 @@ class Page:
         self.stack = stack
 
 
-class Pages:
+class PageOwner:
     def __init__(self):
+        # stack of current node
         self.stack = None
-        # dict of {order: count}
+        # dict of {order: count} of current node
         self.page_count = {}
         self.pages = {}
 
     def add_page(self, page):
         self._add_page(page, page.stack)
 
-    def _add_page(self, page, path):
+    def _add_page(self, page, path, count=1):
         if not path:
             if self.stack is None:
                 self.stack = page.stack
             cnt = self.page_count.get(page.order, 0)
-            self.page_count[page.order] = cnt + 1
+            self.page_count[page.order] = cnt + count
         else:
             cur_path = path[0]
             rest_path = path[1:]
             if cur_path not in self.pages:
-                self.pages[cur_path] = Pages()
-            self.pages[cur_path]._add_page(page, rest_path)
+                self.pages[cur_path] = PageOwner()
+            self.pages[cur_path]._add_page(page, rest_path, count)
 
     def __iter__(self):
         return self.all_pages(False)
 
-    # TODO add operator -
-
+    # compare with other page_owner
+    def sub(self, other):
+        for page_count, stack in other:
+            for order, count in page_count.items():
+                page = Page(order, stack)
+                self._add_page(page, page.stack, 0-count)
 
     def all_pages(self, merge_by_stack):
         """Return ({order: count}, stack)
@@ -134,7 +139,7 @@ def parse_args_or_exit(argv=None):
 
 
 def _parse_pages(filename):
-    pages = Pages()
+    page_owner = PageOwner()
     idx = 0
     with open(filename) as f:
         lines = []
@@ -142,18 +147,18 @@ def _parse_pages(filename):
             l = l.strip()
             if not l:
                 if lines:
-                    pages.parse_and_add_page(lines)
+                    page_owner.parse_and_add_page(lines)
                     if idx % 10000 == 0:
-                        logging.debug('Parsing %d', idx)
+                        logging.info('Parsing %d', idx)
                     idx += 1
                     lines = []
             else:
                 lines.append(l)
 
         if lines:
-            pages.parse_and_add_page(lines)
+            page_owner.parse_and_add_page(lines)
 
-    return pages
+    return page_owner
 
 def print_page_count(page_count):
     for order, count in page_count.items():
@@ -173,13 +178,17 @@ def print_sorted_pages(pages):
         print()
 
 def parse_page_owner(args):
-    pages = _parse_pages(args.file)
-    sorted_pages = pages.sorted_pages(args.merge_stack, args.calc_page_space)
+    page_owner = _parse_pages(args.file)
+    sorted_pages = page_owner.sorted_pages(args.merge_stack, args.calc_page_space)
     print_sorted_pages(sorted_pages)
 
 
 def diff_page_owner(args):
-    pass
+    page_owner_old = _parse_pages(args.file_old)
+    page_owner_new = _parse_pages(args.file_new)
+    page_owner_new.sub(page_owner_old)
+    sorted_pages = page_owner_new.sorted_pages(args.merge_stack, args.calc_page_space)
+    print_sorted_pages(sorted_pages)
 
 
 def main(args_in):

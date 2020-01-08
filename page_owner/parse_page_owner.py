@@ -86,7 +86,13 @@ class PageOwner:
         return Page(order, traceback)
 
     def parse_and_add_page(self, lines):
-        page = self.parse_one_page(lines)
+        try:
+            page = self.parse_one_page(lines)
+        except:
+            logging.error('Parse fails for lines:')
+            for line in lines:
+                logging.error(line)
+            raise
         self.add_page(page)
 
 
